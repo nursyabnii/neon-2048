@@ -31,12 +31,12 @@ Anda tidak memerlukan server atau alat build apa pun untuk menjalankan game ini.
     * `script.js`
 
 2.  **Tambahkan File Suara (PENTING)**
-    Game ini membutuhkan tiga file audio agar dapat berfungsi dengan benar. Unduh file `.mp3` singkat untuk setiap aksi dan letakkan di folder yang **sama** dengan file `index.html`.
+    Game ini membutuhkan tiga file audio agar dapat berfungsi dengan benar. Unduh file `.wav` singkat untuk setiap aksi dan letakkan di folder yang **sama** dengan file `index.html`.
 
     Pastikan nama filenya persis seperti ini:
-    * `slide.mp3` (suara gesekan ubin)
-    * `win.mp3` (suara saat mencapai 2048)
-    * `lose.mp3` (suara saat game over)
+    * `slide.wav` (suara gesekan ubin)
+    * `win.wav` (suara saat mencapai 2048)
+    * `lose.wav` (suara saat game over)
 
 3.  **Buka di Browser**
     Cukup klik dua kali file `index.html` untuk membukanya di browser web favorit Anda (seperti Chrome, Firefox, atau Safari).
