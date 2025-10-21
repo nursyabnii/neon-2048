@@ -3,7 +3,6 @@
 Sebuah versi modern dari game klasik 2048, dibangun dengan tema neon yang ramping dan gelap. Proyek ini dibuat dengan HTML, CSS, dan JavaScript murni, serta sepenuhnya responsif untuk dimainkan di desktop maupun perangkat seluler.
 
 ![Gameplay Neon 2048](placeholder.png)
-*(Ganti `placeholder.png` dengan screenshot game Anda sendiri!)*
 
 ---
 
