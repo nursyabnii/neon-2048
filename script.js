@@ -17,7 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const loseSound = document.getElementById('lose-sound');
 
     const GRID_SIZE = 4;
-    let grid = []; // Mengganti 'board' menjadi 'grid' untuk membedakan dengan objek Tile
+    let board = [];
     let score = 0;
     let highScore = 0;
     let hasWon = false;
@@ -26,61 +26,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Variabel untuk deteksi sentuhan (swipe)
     let touchStartX = 0;
     let touchStartY = 0;
-    let isSwiping = false; // Flag untuk melacak apakah sedang swipe
-
-    // Class untuk merepresentasikan setiap Tile
-    class Tile {
-        constructor(value, r, c) {
-            this.value = value;
-            this.r = r;
-            this.c = c;
-            this.domElement = document.createElement('div');
-            this.domElement.classList.add('tile');
-            this.domElement.textContent = value;
-            this.updateDomPosition();
-            this.updateDomValue();
-            boardElement.appendChild(this.domElement);
-        }
-
-        updateDomPosition() {
-            this.domElement.style.top = `${this.r * boardSize + 5}px`;
-            this.domElement.style.left = `${this.c * boardSize + 5}px`;
-        }
-
-        updateDomValue() {
-            this.domElement.textContent = this.value;
-            this.domElement.className = 'tile'; // Reset class
-            this.domElement.classList.add(`tile-${this.value}`);
-        }
-
-        removeDom() {
-            this.domElement.remove();
-        }
-
-        // Metode untuk animasi spawn
-        animateSpawn() {
-            this.domElement.classList.add('spawn');
-            this.domElement.addEventListener('animationend', () => {
-                this.domElement.classList.remove('spawn');
-            }, { once: true });
-        }
-
-        // Metode untuk animasi merge
-        animateMerge() {
-            this.domElement.classList.add('merge');
-            this.domElement.addEventListener('animationend', () => {
-                this.domElement.classList.remove('merge');
-            }, { once: true });
-        }
-    }
-
 
     function initGame() {
-        // Hapus semua ubin yang ada di DOM
-        const existingTiles = boardElement.querySelectorAll('.tile');
-        existingTiles.forEach(tile => tile.remove());
-
-        grid = Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill(null)); // Sekarang berisi objek Tile atau null
+        board = Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill(0));
         score = 0;
         hasWon = false;
         highScore = localStorage.getItem('neon2048HighScore') || 0;
@@ -88,36 +36,83 @@ document.addEventListener('DOMContentLoaded', () => {
         highScoreElement.textContent = highScore;
         gameOverModal.classList.remove('show');
 
-        // Gambar hanya grid background statis
-        drawGridBackground();
-
         addNewTile();
         addNewTile();
+        drawBoard();
     }
 
-    // Hanya menggambar latar belakang grid statis
-    function drawGridBackground() {
-        boardElement.innerHTML = ''; // Hapus semua (termasuk ubin jika ada)
+    // Menggambar papan (grid statis + ubin dinamis)
+    function drawBoard() {
+        boardElement.innerHTML = ''; // Hapus ubin lama
         const boardWidth = boardElement.clientWidth;
-        boardSize = boardWidth / GRID_SIZE;
+        boardSize = boardWidth / GRID_SIZE; // Ukuran sel
 
+        // Buat grid background
         for (let r = 0; r < GRID_SIZE; r++) {
             for (let c = 0; c < GRID_SIZE; c++) {
                 const cell = document.createElement('div');
                 cell.classList.add('grid-cell');
-                cell.style.width = `${boardSize - 10}px`;
+                cell.style.width = `${boardSize - 10}px`; // Kurangi gap
                 cell.style.height = `${boardSize - 10}px`;
                 boardElement.appendChild(cell);
             }
         }
+
+        // Gambar ubin di atas grid
+        for (let r = 0; r < GRID_SIZE; r++) {
+            for (let c = 0; c < GRID_SIZE; c++) {
+                if (board[r][c] !== 0) {
+                    createTile(r, c, board[r][c]);
+                }
+            }
+        }
     }
 
-    // Membuat dan menambahkan ubin baru
+    // Fungsi untuk membuat elemen ubin
+    function createTile(r, c, value, isNew = false, isMerge = false) {
+        const tile = document.createElement('div');
+        const tileValue = value;
+        tile.textContent = tileValue;
+        tile.classList.add('tile', `tile-${tileValue}`);
+
+        // Set ukuran dan posisi
+        tile.style.width = `${boardSize - 10}px`;
+        tile.style.height = `${boardSize - 10}px`;
+        tile.style.top = `${r * boardSize + 5}px`; // 5px untuk padding/gap
+        tile.style.left = `${c * boardSize + 5}px`;
+
+        if (isNew) tile.classList.add('spawn');
+        if (isMerge) tile.classList.add('merge');
+
+        boardElement.appendChild(tile);
+    }
+
+    // Menggambar ulang ubin setelah bergerak (dengan animasi)
+    function redrawTiles(oldBoard) {
+        boardElement.innerHTML = ''; // Hapus semua
+        drawBoard(); // Gambar ulang background dan ubin di posisi baru
+
+        // Tambahkan animasi spawn/merge
+        for (let r = 0; r < GRID_SIZE; r++) {
+            for (let c = 0; c < GRID_SIZE; c++) {
+                if (board[r][c] !== 0) {
+                    const isNew = oldBoard[r][c] === 0;
+                    const isMerge = !isNew && board[r][c] !== oldBoard[r][c];
+
+                    // Hapus ubin yang ada di DOM (jika ada) dan buat ulang dengan animasi
+                    // Ini adalah cara sederhana untuk animasi; idealnya adalah memindahkan DOM
+                    createTile(r, c, board[r][c], isNew, isMerge);
+                }
+            }
+        }
+    }
+
+
     function addNewTile() {
         let emptyCells = [];
         for (let r = 0; r < GRID_SIZE; r++) {
             for (let c = 0; c < GRID_SIZE; c++) {
-                if (grid[r][c] === null) {
+                if (board[r][c] === 0) {
                     emptyCells.push({ r, c });
                 }
             }
@@ -125,10 +120,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (emptyCells.length > 0) {
             const { r, c } = emptyCells[Math.floor(Math.random() * emptyCells.length)];
-            const value = Math.random() < 0.9 ? 2 : 4;
-            const newTile = new Tile(value, r, c);
-            grid[r][c] = newTile;
-            newTile.animateSpawn();
+            board[r][c] = Math.random() < 0.9 ? 2 : 4;
         }
     }
 
@@ -143,88 +135,32 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function playSound(sound) {
-        sound.currentTime = 0;
-        sound.play().catch(e => { /* console.log("Interaksi pengguna diperlukan untuk memutar suara."); */ });
+        sound.currentTime = 0; // Putar ulang dari awal
+        sound.play().catch(e => console.log("Interaksi pengguna diperlukan untuk memutar suara."));
     }
 
     // Logika Gerakan
-    async function performMove(moveFunction) {
-        if (isGameOver()) return;
 
-        // Clone grid values only for comparison
-        const oldGridValues = grid.map(row => row.map(tile => tile ? tile.value : 0));
-        let moved = false;
+    // FUNGSI BARU: Menjalankan logika setelah bergerak
+    function performMove(moveFunction) {
+        if (isGameOver()) return; // Jangan lakukan apa-apa jika sudah kalah
 
-        // Panggil fungsi gerak yang sebenarnya dan dapatkan informasi apakah ada pergerakan
-        const { hasMoved, mergedTiles } = moveFunction();
-
-        moved = hasMoved;
+        const oldBoard = JSON.parse(JSON.stringify(board));
+        let moved = moveFunction(); // Menjalankan fungsi gerak (moveUp, moveLeft, dll)
 
         if (moved) {
             playSound(slideSound);
-
-            // Animasi pergerakan ubin
-            // Tunggu semua transisi ubin selesai sebelum menambahkan ubin baru
-            const tileMovePromises = [];
-            for (let r = 0; r < GRID_SIZE; r++) {
-                for (let c = 0; c < GRID_SIZE; c++) {
-                    const tile = grid[r][c];
-                    if (tile && (tile.r !== r || tile.c !== c)) {
-                        // Jika ubin bergerak, perbarui posisi DOM-nya
-                        tile.r = r; // Perbarui posisi di objek Tile
-                        tile.c = c;
-                        tile.updateDomPosition(); // Update style di DOM
-                        tileMovePromises.push(new Promise(resolve => {
-                            tile.domElement.addEventListener('transitionend', resolve, { once: true });
-                        }));
-                    }
-                }
-            }
-
-            // Animasi merge (harus dilakukan setelah pergerakan)
-            for (const mergedTile of mergedTiles) {
-                mergedTile.animateMerge();
-                mergedTile.updateDomValue(); // Pastikan nilai tile yang digabung sudah terupdate
-            }
-
-            await Promise.all(tileMovePromises); // Tunggu semua ubin selesai bergerak
-
-            // Hapus ubin yang sudah tidak ada (karena digabung)
-            // Ini akan dilakukan secara otomatis saat `initGame` atau `addNewTile`
-            // Namun, untuk merge, kita perlu membersihkan tile yang "dihapus"
-            // Kita bisa menambahkan timeout kecil untuk memberi waktu animasi merge
-            setTimeout(() => {
-                // Di sini, kita akan membersihkan elemen DOM dari ubin yang sudah digabung
-                // Misalnya, jika A dan B bergabung menjadi A', B harus dihapus
-                // Dalam implementasi ini, kita memastikan `grid` hanya berisi `Tile` yang valid
-                // Ubin yang digabungkan akan menjadi `null` di posisi lama mereka setelah `combineGrid`
-                // Kita perlu mekanisme untuk menghapus DOM dari `Tile` yang menjadi `null`.
-                // Cara paling mudah adalah dengan merefresh tampilan, atau lebih efisien:
-                const currentDomTiles = new Set();
-                for (let r = 0; r < GRID_SIZE; r++) {
-                    for (let c = 0; c < GRID_SIZE; c++) {
-                        if (grid[r][c]) {
-                            currentDomTiles.add(grid[r][c].domElement);
-                        }
-                    }
-                }
-                Array.from(boardElement.querySelectorAll('.tile')).forEach(domTile => {
-                    if (!currentDomTiles.has(domTile)) {
-                        domTile.remove();
-                    }
-                });
-            }, 100); // Sedikit jeda setelah transisi berakhir
-
             addNewTile();
+            redrawTiles(oldBoard); // Gambar ulang dengan animasi
 
             if (!hasWon && checkForWin()) {
                 hasWon = true;
-                showGameEndModal(true);
+                showGameEndModal(true); // Menang
                 playSound(winSound);
             }
 
             if (isGameOver()) {
-                showGameEndModal(false);
+                showGameEndModal(false); // Kalah
                 playSound(loseSound);
             }
         }
@@ -233,7 +169,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // DIMODIFIKASI: Input Keyboard (sekarang memanggil 'performMove')
     function handleInput(e) {
         if (e.key.startsWith('Arrow')) {
-            e.preventDefault();
+            e.preventDefault(); // Mencegah window scrolling
             switch (e.key) {
                 case 'ArrowUp':
                     performMove(moveUp);
@@ -253,21 +189,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- KODE BARU UNTUK LAYAR SENTUH ---
     function handleTouchStart(e) {
+        // Mencegah 'click' ganda di mobile
         e.preventDefault();
         touchStartX = e.touches[0].clientX;
         touchStartY = e.touches[0].clientY;
-        isSwiping = true;
-    }
-
-    function handleTouchMove(e) {
-        // Mencegah scrolling halaman saat menggeser di dalam papan game
-        e.preventDefault();
-        // Set isSwiping = true di touchstart
     }
 
     function handleTouchEnd(e) {
-        e.preventDefault();
-        if (!isSwiping || !e.changedTouches.length) return;
+        e.preventDefault(); // Mencegah 'click' ganda di mobile
+        if (!e.changedTouches.length) return;
 
         const touchEndX = e.changedTouches[0].clientX;
         const touchEndY = e.changedTouches[0].clientY;
@@ -275,8 +205,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const deltaX = touchEndX - touchStartX;
         const deltaY = touchEndY - touchStartY;
 
+        // Jarak geser minimum agar dianggap 'swipe'
         const swipeThreshold = 50;
-        isSwiping = false; // Reset flag
 
         if (Math.abs(deltaX) > Math.abs(deltaY)) {
             // Geser Horizontal
@@ -296,138 +226,95 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     // --- AKHIR KODE BARU ---
 
-    // Helper: geser & gabung (memanipulasi objek Tile)
-    // Fungsi ini akan mengembalikan objek yang berisi:
-    // - hasMoved: boolean, apakah ada ubin yang bergerak atau digabung
-    // - mergedTiles: Array of Tile, ubin yang baru saja digabung
-    function slideAndCombine(arr) {
-        let hasMoved = false;
-        const mergedTiles = [];
 
-        // 1. Geser semua ubin non-null ke depan
-        let newArr = arr.filter(tile => tile !== null);
-        let numMissing = GRID_SIZE - newArr.length;
-        if (numMissing > 0) hasMoved = true; // Jika ada nol, berarti ada pergerakan
-        let zeros = Array(numMissing).fill(null);
-        newArr = newArr.concat(zeros);
-
-        // 2. Gabungkan ubin yang sama
-        for (let i = 0; i < GRID_SIZE - 1; i++) {
-            if (newArr[i] !== null && newArr[i].value === newArr[i + 1]?.value) {
-                newArr[i].value *= 2;
-                updateScore(newArr[i].value);
-                mergedTiles.push(newArr[i]); // Tambahkan ke daftar ubin yang digabung
-
-                newArr[i + 1].removeDom(); // Hapus DOM dari ubin yang akan digabung
-                newArr[i + 1] = null; // Set tile tersebut menjadi null
-                hasMoved = true;
-            }
-        }
-
-        // 3. Geser lagi setelah penggabungan
-        let finalArr = newArr.filter(tile => tile !== null);
-        numMissing = GRID_SIZE - finalArr.length;
-        zeros = Array(numMissing).fill(null);
-        finalArr = finalArr.concat(zeros);
-
-        // Bandingkan untuk memastikan pergerakan
-        for (let i = 0; i < GRID_SIZE; i++) {
-            if ((arr[i] === null && finalArr[i] !== null) ||
-                (arr[i] !== null && finalArr[i] === null) ||
-                (arr[i] !== null && finalArr[i] !== null && arr[i].value !== finalArr[i].value)
-            ) {
-                hasMoved = true;
-            }
-        }
-
-        return { newRow: finalArr, hasMoved, mergedTiles };
+    // Helper: geser & gabung
+    function slide(row) {
+        let arr = row.filter(val => val); // Singkirkan nol
+        let missing = GRID_SIZE - arr.length;
+        let zeros = Array(missing).fill(0);
+        return arr.concat(zeros); // Tambahkan nol di akhir
     }
 
-    // Fungsi Gerakan Utama (sekarang mengembalikan { hasMoved, mergedTiles })
-    function moveLeft() {
-        let globalHasMoved = false;
-        let globalMergedTiles = [];
-
-        for (let r = 0; r < GRID_SIZE; r++) {
-            let row = grid[r];
-            const { newRow, hasMoved, mergedTiles } = slideAndCombine(row);
-
-            grid[r] = newRow; // Perbarui baris di grid utama
-
-            if (hasMoved) globalHasMoved = true;
-            globalMergedTiles.push(...mergedTiles);
-
-            // Perbarui posisi Tile objects agar sesuai dengan grid baru
-            for (let c = 0; c < GRID_SIZE; c++) {
-                if (grid[r][c]) {
-                    grid[r][c].r = r;
-                    grid[r][c].c = c;
-                }
+    function combine(row) {
+        let newScore = 0;
+        for (let i = 0; i < GRID_SIZE - 1; i++) {
+            if (row[i] !== 0 && row[i] === row[i + 1]) {
+                row[i] *= 2;
+                newScore += row[i];
+                row[i + 1] = 0;
             }
         }
-        return { hasMoved: globalHasMoved, mergedTiles: globalMergedTiles };
+        updateScore(newScore);
+        return row;
+    }
+
+    // Fungsi Gerakan Utama
+    function moveLeft() {
+        let moved = false;
+        for (let r = 0; r < GRID_SIZE; r++) {
+            let row = board[r];
+            let originalRow = [...row];
+
+            let newRow = slide(row);
+            newRow = combine(newRow);
+            newRow = slide(newRow);
+
+            board[r] = newRow;
+            if (originalRow.join(',') !== newRow.join(',')) {
+                moved = true;
+            }
+        }
+        return moved;
     }
 
     function moveRight() {
-        let globalHasMoved = false;
-        let globalMergedTiles = [];
-
+        let moved = false;
         for (let r = 0; r < GRID_SIZE; r++) {
-            let row = grid[r].slice().reverse(); // Balik baris untuk logika kanan
-            const { newRow, hasMoved, mergedTiles } = slideAndCombine(row);
+            let row = board[r].reverse(); // Balik
+            let originalRow = [...row];
 
-            grid[r] = newRow.reverse(); // Balik lagi untuk menyimpan di grid utama
+            let newRow = slide(row);
+            newRow = combine(newRow);
+            newRow = slide(newRow);
 
-            if (hasMoved) globalHasMoved = true;
-            globalMergedTiles.push(...mergedTiles);
-
-            // Perbarui posisi Tile objects
-            for (let c = 0; c < GRID_SIZE; c++) {
-                if (grid[r][c]) {
-                    grid[r][c].r = r;
-                    grid[r][c].c = c;
-                }
+            board[r] = newRow.reverse(); // Balik lagi
+            if (originalRow.join(',') !== newRow.join(',')) {
+                moved = true;
             }
         }
-        return { hasMoved: globalHasMoved, mergedTiles: globalMergedTiles };
+        return moved;
     }
 
     // Helper: Transpose (mengubah baris jadi kolom dan sebaliknya)
     function transpose() {
-        let newGrid = Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill(null));
+        let newBoard = Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill(0));
         for (let r = 0; r < GRID_SIZE; r++) {
             for (let c = 0; c < GRID_SIZE; c++) {
-                newGrid[c][r] = grid[r][c];
-                if (newGrid[c][r]) {
-                    // Perbarui r dan c sementara di objek Tile saat transpose
-                    // Ini penting agar animasi geser bekerja dengan benar
-                    newGrid[c][r].r = c;
-                    newGrid[c][r].c = r;
-                }
+                newBoard[c][r] = board[r][c];
             }
         }
-        grid = newGrid;
+        board = newBoard;
     }
 
     function moveUp() {
         transpose();
-        const result = moveLeft(); // Gerakan 'atas' di grid ter-transpose adalah 'kiri'
-        transpose(); // Balikkan kembali
-        return result;
+        let moved = moveLeft();
+        transpose();
+        return moved;
     }
 
     function moveDown() {
         transpose();
-        const result = moveRight(); // Gerakan 'bawah' di grid ter-transpose adalah 'kanan'
-        transpose(); // Balikkan kembali
-        return result;
+        let moved = moveRight();
+        transpose();
+        return moved;
     }
 
     // Cek Menang / Kalah
     function checkForWin() {
         for (let r = 0; r < GRID_SIZE; r++) {
             for (let c = 0; c < GRID_SIZE; c++) {
-                if (grid[r][c] && grid[r][c].value === 2048) {
+                if (board[r][c] === 2048) {
                     return true;
                 }
             }
@@ -439,19 +326,19 @@ document.addEventListener('DOMContentLoaded', () => {
         // Cek sel kosong
         for (let r = 0; r < GRID_SIZE; r++) {
             for (let c = 0; c < GRID_SIZE; c++) {
-                if (grid[r][c] === null) return true;
+                if (board[r][c] === 0) return true;
             }
         }
         // Cek gabung horizontal
         for (let r = 0; r < GRID_SIZE; r++) {
             for (let c = 0; c < GRID_SIZE - 1; c++) {
-                if (grid[r][c] && grid[r][c].value === grid[r][c + 1]?.value) return true;
+                if (board[r][c] === board[r][c + 1]) return true;
             }
         }
         // Cek gabung vertikal
         for (let r = 0; r < GRID_SIZE - 1; r++) {
             for (let c = 0; c < GRID_SIZE; c++) {
-                if (grid[r][c] && grid[r][c].value === grid[r + 1][c]?.value) return true;
+                if (board[r][c] === board[r + 1][c]) return true;
             }
         }
         return false; // Tidak bisa gerak lagi
@@ -481,9 +368,15 @@ document.addEventListener('DOMContentLoaded', () => {
     // Event Listeners
     document.addEventListener('keydown', handleInput);
 
+    // --- EVENT LISTENER BARU UNTUK SENTUHAN ---
+    // Kita terapkan di 'boardElement' agar tidak mengganggu tombol
     boardElement.addEventListener('touchstart', handleTouchStart, { passive: false });
-    boardElement.addEventListener('touchmove', handleTouchMove, { passive: false });
     boardElement.addEventListener('touchend', handleTouchEnd, { passive: false });
+    boardElement.addEventListener('touchmove', (e) => {
+        // Mencegah scrolling halaman saat menggeser di dalam papan game
+        e.preventDefault();
+    }, { passive: false });
+
 
     newGameBtn.addEventListener('click', initGame);
     restartGameBtn.addEventListener('click', initGame);
@@ -493,6 +386,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     closeInstructionsBtn.addEventListener('click', closeAllModals);
 
+    // Menutup modal jika klik di luar konten
     instructionsModal.addEventListener('click', (e) => {
         if (e.target === instructionsModal) closeAllModals();
     });
@@ -501,18 +395,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Mengatasi perubahan ukuran window
-    window.addEventListener('resize', () => {
-        drawGridBackground(); // Gambar ulang hanya latar belakang
-        // Perbarui posisi semua ubin yang ada
-        boardSize = boardElement.clientWidth / GRID_SIZE;
-        for (let r = 0; r < GRID_SIZE; r++) {
-            for (let c = 0; c < GRID_SIZE; c++) {
-                if (grid[r][c]) {
-                    grid[r][c].updateDomPosition();
-                }
-            }
-        }
-    });
+    window.addEventListener('resize', drawBoard);
 
     // Mulai Game!
     initGame();
