@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <title>Neon 2048</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <div class="game-container">
+        <header>
+            <h1>2048</h1>
+            <div class="score-container">
+                <div class="score-box">
+                    <span>SKOR</span>
+                    <div id="score">0</div>
+                </div>
+                <div class="score-box">
+                    <span>TERBAIK</span>
+                    <div id="high-score">0</div>
+                </div>
+            </div>
+        </header>
+
+        <div class="game-controls">
+            <button id="new-game-btn">Game Baru</button>
+            <button id="instructions-btn">Cara Bermain</button>
+        </div>
+
+        <div id="game-board-container">
+            <div id="game-board">
+            </div>
+        </div>
+    </div>
+
+    <div id="instructions-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" id="close-instructions">&times;</span>
+            <h2>Cara Bermain</h2>
+            <p>Gunakan tombol panah (<strong>&uarr; &darr; &larr; &rarr;</strong>) di keyboard Anda untuk menggeser
+                ubin.</p>
+            <p>Ketika dua ubin dengan angka yang sama bersentuhan, mereka akan bergabung menjadi satu!</p>
+            <p>Capai ubin <strong>2048</strong> untuk menang!</p>
+            <p>Game berakhir jika papan sudah penuh dan tidak ada lagi gerakan yang bisa dilakukan.</p>
+        </div>
+    </div>
+
+    <div id="game-over-modal" class="modal">
+        <div class="modal-content">
+            <h2 id="modal-title">Game Over!</h2>
+            <p id="modal-message">Coba lagi?</p>
+            <button id="restart-game-btn">Mulai Ulang</button>
+        </div>
+    </div>
+
+    <audio id="slide-sound" src="sounds/slide.wav" preload="auto"></audio>
+    <audio id="win-sound" src="sounds/win.wav" preload="auto"></audio>
+    <audio id="lose-sound" src="sounds/lose.wav" preload="auto"></audio>
+
+    <script src="script.js"></script>
+</body>
+
+</html>

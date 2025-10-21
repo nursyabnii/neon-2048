@@ -1,0 +1,378 @@
+/* Import Font Modern (Opsional, tapi disarankan) */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap');
+
+:root {
+    --bg-color: #0a0a23;
+    /* Biru sangat gelap / Hitam */
+    --grid-bg: #1a1a3e;
+    --cell-bg: #2a2a4e;
+    --neon-pink: #ff00de;
+    --neon-cyan: #00ffff;
+    --neon-lime: #aeff00;
+    --text-light: #f0f0f0;
+    --text-dark: #1a1a2e;
+}
+
+/* Animasi */
+@keyframes spawn {
+    0% {
+        transform: scale(0.5);
+        opacity: 0;
+    }
+
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes merge {
+    0% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.2);
+        box-shadow: 0 0 30px var(--neon-lime);
+    }
+
+    100% {
+        transform: scale(1);
+    }
+}
+
+/* Reset Dasar */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Poppins', 'Arial', sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-light);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 15px;
+    /* Sedikit lebih kecil untuk layar hp */
+}
+
+.game-container {
+    width: 100%;
+    max-width: 500px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+header h1 {
+    /* RESPONSIF: clamp(min, ideal, max) */
+    font-size: clamp(2.5rem, 10vw, 4rem);
+    color: #fff;
+    text-shadow:
+        0 0 10px #fff,
+        0 0 20px var(--neon-pink),
+        0 0 30px var(--neon-pink);
+}
+
+.score-container {
+    display: flex;
+    gap: 10px;
+}
+
+.score-box {
+    background-color: var(--grid-bg);
+    padding: 8px 12px;
+    /* Disesuaikan agar pas */
+    border-radius: 8px;
+    text-align: center;
+    border: 1px solid var(--neon-cyan);
+    box-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
+}
+
+.score-box span {
+    font-size: 0.8rem;
+    /* Sedikit lebih kecil */
+    color: var(--neon-cyan);
+    font-weight: bold;
+}
+
+#score,
+#high-score {
+    font-size: clamp(1.5rem, 5vw, 1.8rem);
+    /* RESPONSIF */
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.game-controls {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+#new-game-btn,
+#instructions-btn {
+    flex: 1;
+    padding: 12px;
+    font-size: clamp(0.9rem, 3vw, 1rem);
+    /* RESPONSIF */
+    font-weight: bold;
+    color: var(--neon-cyan);
+    background-color: transparent;
+    border: 2px solid var(--neon-cyan);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-shadow: 0 0 5px var(--neon-cyan);
+}
+
+#new-game-btn:hover,
+#instructions-btn:hover {
+    background-color: var(--neon-cyan);
+    color: var(--text-dark);
+    box-shadow: 0 0 20px var(--neon-cyan);
+    text-shadow: none;
+}
+
+#game-board-container {
+    background-color: var(--grid-bg);
+    border: 3px solid var(--neon-pink);
+    box-shadow: 0 0 25px rgba(255, 0, 222, 0.6);
+    border-radius: 10px;
+    padding: 10px;
+    position: relative;
+}
+
+#game-board {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: repeat(4, 1fr);
+    gap: 10px;
+    /* Ini penting untuk aspect-ratio */
+    aspect-ratio: 1 / 1;
+}
+
+.grid-cell {
+    background-color: var(--cell-bg);
+    border-radius: 5px;
+}
+
+.tile {
+    position: absolute;
+    border-radius: 5px;
+    /* RESPONSIF: Ukuran font ubin dasar */
+    font-size: clamp(1.5rem, 8vw, 2.5rem);
+    font-weight: bold;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: left 0.2s ease, top 0.2s ease, transform 0.2s ease;
+    animation-duration: 0.2s;
+    animation-fill-mode: forwards;
+}
+
+.tile.spawn {
+    animation-name: spawn;
+}
+
+.tile.merge {
+    animation-name: merge;
+}
+
+/* Desain Neon untuk Ubin */
+.tile-2 {
+    background: #00ffff;
+    color: var(--text-dark);
+    box-shadow: 0 0 10px #00ffff;
+}
+
+.tile-4 {
+    background: #00ffaa;
+    color: var(--text-dark);
+    box-shadow: 0 0 10px #00ffaa;
+}
+
+.tile-8 {
+    background: #00ff00;
+    color: var(--text-dark);
+    box-shadow: 0 0 10px #00ff00;
+}
+
+.tile-16 {
+    background: #aeff00;
+    color: var(--text-dark);
+    box-shadow: 0 0 10px #aaff00;
+}
+
+.tile-32 {
+    background: #ffff00;
+    color: var(--text-dark);
+    box-shadow: 0 0 15px #ffff00;
+}
+
+.tile-64 {
+    background: #ffaa00;
+    color: var(--text-dark);
+    box-shadow: 0 0 15px #ffaa00;
+}
+
+.tile-128 {
+    background: #ff5500;
+    color: var(--text-light);
+    box-shadow: 0 0 20px #ff5500;
+}
+
+.tile-256 {
+    background: #ff0000;
+    color: var(--text-light);
+    box-shadow: 0 0 20px #ff0000;
+}
+
+.tile-512 {
+    background: #ff00ff;
+    color: var(--text-light);
+    box-shadow: 0 0 25px #ff00ff;
+}
+
+.tile-1024 {
+    background: #aa00ff;
+    color: var(--text-light);
+    box-shadow: 0 0 30px #aa00ff;
+}
+
+.tile-2048 {
+    background: #fff;
+    color: var(--text-dark);
+    box-shadow: 0 0 40px #fff, 0 0 20px var(--neon-pink);
+}
+
+.tile-4096 {
+    background: #ff00de;
+    color: var(--text-light);
+    box-shadow: 0 0 40px #ff00de;
+}
+
+/* RESPONSIF: Menyesuaikan ukuran font untuk angka besar */
+.tile-128,
+.tile-256,
+.tile-512 {
+    font-size: clamp(1.3rem, 7vw, 2.2rem);
+}
+
+.tile-1024,
+.tile-2048,
+.tile-4096 {
+    font-size: clamp(1.1rem, 6vw, 1.8rem);
+}
+
+
+/* Modal Styles */
+.modal {
+    display: none;
+    /* Sembunyi secara default */
+    position: fixed;
+    z-index: 100;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(10, 10, 35, 0.8);
+    backdrop-filter: blur(5px);
+    justify-content: center;
+    align-items: center;
+    padding: 15px;
+    /* Tambahkan padding untuk modal di HP */
+}
+
+.modal.show {
+    display: flex;
+}
+
+.modal-content {
+    background-color: var(--grid-bg);
+    padding: 30px;
+    border: 2px solid var(--neon-pink);
+    border-radius: 10px;
+    box-shadow: 0 0 30px var(--neon-pink);
+    width: 100%;
+    /* Lebar penuh di HP */
+    max-width: 400px;
+    text-align: center;
+    position: relative;
+    animation: spawn 0.3s;
+}
+
+.close-btn {
+    position: absolute;
+    top: 10px;
+    right: 20px;
+    color: var(--text-light);
+    font-size: 2rem;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.close-btn:hover {
+    color: var(--neon-pink);
+}
+
+.modal-content h2 {
+    color: var(--neon-cyan);
+    text-shadow: 0 0 10px var(--neon-cyan);
+    margin-bottom: 20px;
+}
+
+.modal-content p {
+    margin-bottom: 20px;
+    line-height: 1.6;
+}
+
+#restart-game-btn {
+    padding: 12px 25px;
+    font-size: 1rem;
+    font-weight: bold;
+    color: var(--neon-lime);
+    background-color: transparent;
+    border: 2px solid var(--neon-lime);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-shadow: 0 0 5px var(--neon-lime);
+}
+
+#restart-game-btn:hover {
+    background-color: var(--neon-lime);
+    color: var(--text-dark);
+    box-shadow: 0 0 20px var(--neon-lime);
+    text-shadow: none;
+}
+
+/* Media query ini sekarang bisa lebih sederhana,
+   karena clamp() sudah menangani sebagian besar ukuran font.
+   Kita tetap menyimpannya untuk penyesuaian kecil lainnya jika perlu.
+*/
+@media (max-width: 480px) {
+    body {
+        padding: 10px;
+        /* Kurangi padding di layar sangat kecil */
+    }
+
+    .score-box {
+        padding: 5px 10px;
+        /* Perkecil kotak skor */
+    }
+
+    .score-box span {
+        font-size: 0.7rem;
+    }
+}
