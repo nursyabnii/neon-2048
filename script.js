@@ -1,4 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // ... (semua variabel 'const' Anda tetap sama) ...
     const boardElement = document.getElementById('game-board');
     const scoreElement = document.getElementById('score');
     const highScoreElement = document.getElementById('high-score');
@@ -17,110 +18,116 @@ document.addEventListener('DOMContentLoaded', () => {
     const loseSound = document.getElementById('lose-sound');
 
     const GRID_SIZE = 4;
-    let board = [];
+    let grid = [];
     let score = 0;
     let highScore = 0;
     let hasWon = false;
     let boardSize = 0;
 
-    // Variabel untuk deteksi sentuhan (swipe)
     let touchStartX = 0;
     let touchStartY = 0;
+    let isSwiping = false;
+    let isMoving = false; // Kunci untuk animasi
+
+    // Class untuk merepresentasikan setiap Tile
+    class Tile {
+        constructor(value, r, c) {
+            this.value = value;
+            this.r = r;
+            this.c = c;
+            this.domElement = document.createElement('div');
+            this.domElement.classList.add('tile');
+            this.domElement.textContent = value;
+            this.updateDomPosition(); // Ini akan mengatur ukuran dan posisi
+            this.updateDomValue();
+            boardElement.appendChild(this.domElement);
+        }
+
+        // --- FIX ADA DI SINI ---
+        // Fungsi ini sekarang juga mengatur LEBAR dan TINGGI
+        updateDomPosition() {
+            const tileSize = boardSize - 10; // 10 untuk gap (padding 5px di setiap sisi)
+
+            this.domElement.style.width = `${tileSize}px`;
+            this.domElement.style.height = `${tileSize}px`;
+            this.domElement.style.top = `${this.r * boardSize + 5}px`;
+            this.domElement.style.left = `${this.c * boardSize + 5}px`;
+        }
+        // --- AKHIR FIX ---
+
+        updateDomValue() {
+            this.domElement.textContent = this.value;
+            this.domElement.className = 'tile'; // Reset class
+            this.domElement.classList.add(`tile-${this.value}`);
+        }
+
+        removeDom() {
+            this.domElement.remove();
+        }
+
+        animateSpawn() {
+            this.domElement.classList.add('spawn');
+            this.domElement.addEventListener('animationend', () => {
+                this.domElement.classList.remove('spawn');
+            }, { once: true });
+        }
+
+        animateMerge() {
+            this.domElement.classList.add('merge');
+            this.domElement.addEventListener('animationend', () => {
+                this.domElement.classList.remove('merge');
+            }, { once: true });
+        }
+    }
+
+    // ... (Sisa kode SAMA PERSIS seperti sebelumnya) ...
 
     function initGame() {
-        board = Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill(0));
+        const existingTiles = boardElement.querySelectorAll('.tile');
+        existingTiles.forEach(tile => tile.remove());
+        grid = Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill(null));
         score = 0;
         hasWon = false;
+        isMoving = false;
         highScore = localStorage.getItem('neon2048HighScore') || 0;
         updateScore(0);
         highScoreElement.textContent = highScore;
         gameOverModal.classList.remove('show');
-
+        drawGridBackground();
         addNewTile();
         addNewTile();
-        drawBoard();
     }
 
-    // Menggambar papan (grid statis + ubin dinamis)
-    function drawBoard() {
-        boardElement.innerHTML = ''; // Hapus ubin lama
+    function drawGridBackground() {
+        boardElement.innerHTML = '';
         const boardWidth = boardElement.clientWidth;
-        boardSize = boardWidth / GRID_SIZE; // Ukuran sel
-
-        // Buat grid background
+        boardSize = boardWidth / GRID_SIZE; // <-- boardSize di-set di sini
         for (let r = 0; r < GRID_SIZE; r++) {
             for (let c = 0; c < GRID_SIZE; c++) {
                 const cell = document.createElement('div');
                 cell.classList.add('grid-cell');
-                cell.style.width = `${boardSize - 10}px`; // Kurangi gap
+                cell.style.width = `${boardSize - 10}px`;
                 cell.style.height = `${boardSize - 10}px`;
                 boardElement.appendChild(cell);
             }
         }
-
-        // Gambar ubin di atas grid
-        for (let r = 0; r < GRID_SIZE; r++) {
-            for (let c = 0; c < GRID_SIZE; c++) {
-                if (board[r][c] !== 0) {
-                    createTile(r, c, board[r][c]);
-                }
-            }
-        }
     }
-
-    // Fungsi untuk membuat elemen ubin
-    function createTile(r, c, value, isNew = false, isMerge = false) {
-        const tile = document.createElement('div');
-        const tileValue = value;
-        tile.textContent = tileValue;
-        tile.classList.add('tile', `tile-${tileValue}`);
-
-        // Set ukuran dan posisi
-        tile.style.width = `${boardSize - 10}px`;
-        tile.style.height = `${boardSize - 10}px`;
-        tile.style.top = `${r * boardSize + 5}px`; // 5px untuk padding/gap
-        tile.style.left = `${c * boardSize + 5}px`;
-
-        if (isNew) tile.classList.add('spawn');
-        if (isMerge) tile.classList.add('merge');
-
-        boardElement.appendChild(tile);
-    }
-
-    // Menggambar ulang ubin setelah bergerak (dengan animasi)
-    function redrawTiles(oldBoard) {
-        boardElement.innerHTML = ''; // Hapus semua
-        drawBoard(); // Gambar ulang background dan ubin di posisi baru
-
-        // Tambahkan animasi spawn/merge
-        for (let r = 0; r < GRID_SIZE; r++) {
-            for (let c = 0; c < GRID_SIZE; c++) {
-                if (board[r][c] !== 0) {
-                    const isNew = oldBoard[r][c] === 0;
-                    const isMerge = !isNew && board[r][c] !== oldBoard[r][c];
-
-                    // Hapus ubin yang ada di DOM (jika ada) dan buat ulang dengan animasi
-                    // Ini adalah cara sederhana untuk animasi; idealnya adalah memindahkan DOM
-                    createTile(r, c, board[r][c], isNew, isMerge);
-                }
-            }
-        }
-    }
-
 
     function addNewTile() {
         let emptyCells = [];
         for (let r = 0; r < GRID_SIZE; r++) {
             for (let c = 0; c < GRID_SIZE; c++) {
-                if (board[r][c] === 0) {
+                if (grid[r][c] === null) {
                     emptyCells.push({ r, c });
                 }
             }
         }
-
         if (emptyCells.length > 0) {
             const { r, c } = emptyCells[Math.floor(Math.random() * emptyCells.length)];
-            board[r][c] = Math.random() < 0.9 ? 2 : 4;
+            const value = Math.random() < 0.9 ? 2 : 4;
+            const newTile = new Tile(value, r, c); // <-- Tile baru akan memanggil updateDomPosition
+            grid[r][c] = newTile;
+            newTile.animateSpawn();
         }
     }
 
@@ -135,186 +142,259 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function playSound(sound) {
-        sound.currentTime = 0; // Putar ulang dari awal
-        sound.play().catch(e => console.log("Interaksi pengguna diperlukan untuk memutar suara."));
+        sound.currentTime = 0;
+        sound.play().catch(e => { /* console.log("Interaksi pengguna diperlukan untuk memutar suara."); */ });
     }
 
-    // Logika Gerakan
 
-    // FUNGSI BARU: Menjalankan logika setelah bergerak
-    function performMove(moveFunction) {
-        if (isGameOver()) return; // Jangan lakukan apa-apa jika sudah kalah
+    async function performMove(moveFunction) {
+        if (isMoving) return;
+        isMoving = true;
 
-        const oldBoard = JSON.parse(JSON.stringify(board));
-        let moved = moveFunction(); // Menjalankan fungsi gerak (moveUp, moveLeft, dll)
+        if (isGameOver()) {
+            isMoving = false;
+            return;
+        }
 
-        if (moved) {
+        const { hasMoved, mergedTiles } = moveFunction();
+
+        if (hasMoved) {
             playSound(slideSound);
+
+            const tileMovePromises = [];
+
+            for (let r = 0; r < GRID_SIZE; r++) {
+                for (let c = 0; c < GRID_SIZE; c++) {
+                    const tile = grid[r][c];
+                    if (tile) {
+                        const targetTop = `${r * boardSize + 5}px`;
+                        const targetLeft = `${c * boardSize + 5}px`;
+
+                        if (tile.domElement.style.top !== targetTop || tile.domElement.style.left !== targetLeft) {
+                            tile.updateDomPosition(); // Ini akan menggeser ke posisi baru
+
+                            tileMovePromises.push(new Promise(resolve => {
+                                const failsafeTimer = setTimeout(() => resolve(), 200);
+                                const onEnd = () => {
+                                    clearTimeout(failsafeTimer);
+                                    resolve();
+                                };
+                                tile.domElement.addEventListener('transitionend', onEnd, { once: true });
+                            }));
+                        }
+                    }
+                }
+            }
+
+            for (const mergedTile of mergedTiles) {
+                mergedTile.animateMerge();
+                mergedTile.updateDomValue();
+            }
+
+            await Promise.all(tileMovePromises);
+
+            setTimeout(() => {
+                const currentDomTiles = new Set();
+                for (let r = 0; r < GRID_SIZE; r++) {
+                    for (let c = 0; c < GRID_SIZE; c++) {
+                        if (grid[r][c]) {
+                            currentDomTiles.add(grid[r][c].domElement);
+                        }
+                    }
+                }
+                Array.from(boardElement.querySelectorAll('.tile')).forEach(domTile => {
+                    if (!currentDomTiles.has(domTile)) {
+                        domTile.remove();
+                    }
+                });
+            }, 100);
+
             addNewTile();
-            redrawTiles(oldBoard); // Gambar ulang dengan animasi
 
             if (!hasWon && checkForWin()) {
                 hasWon = true;
-                showGameEndModal(true); // Menang
+                showGameEndModal(true);
                 playSound(winSound);
             }
 
             if (isGameOver()) {
-                showGameEndModal(false); // Kalah
+                showGameEndModal(false);
                 playSound(loseSound);
             }
         }
+
+        isMoving = false;
     }
 
-    // DIMODIFIKASI: Input Keyboard (sekarang memanggil 'performMove')
     function handleInput(e) {
         if (e.key.startsWith('Arrow')) {
-            e.preventDefault(); // Mencegah window scrolling
+            e.preventDefault();
             switch (e.key) {
-                case 'ArrowUp':
-                    performMove(moveUp);
-                    break;
-                case 'ArrowDown':
-                    performMove(moveDown);
-                    break;
-                case 'ArrowLeft':
-                    performMove(moveLeft);
-                    break;
-                case 'ArrowRight':
-                    performMove(moveRight);
-                    break;
+                case 'ArrowUp': performMove(moveUp); break;
+                case 'ArrowDown': performMove(moveDown); break;
+                case 'ArrowLeft': performMove(moveLeft); break;
+                case 'ArrowRight': performMove(moveRight); break;
             }
         }
     }
 
-    // --- KODE BARU UNTUK LAYAR SENTUH ---
     function handleTouchStart(e) {
-        // Mencegah 'click' ganda di mobile
         e.preventDefault();
         touchStartX = e.touches[0].clientX;
         touchStartY = e.touches[0].clientY;
+        isSwiping = true;
+    }
+
+    function handleTouchMove(e) {
+        e.preventDefault();
     }
 
     function handleTouchEnd(e) {
-        e.preventDefault(); // Mencegah 'click' ganda di mobile
-        if (!e.changedTouches.length) return;
+        e.preventDefault();
+        if (!isSwiping || !e.changedTouches.length) return;
 
         const touchEndX = e.changedTouches[0].clientX;
         const touchEndY = e.changedTouches[0].clientY;
-
         const deltaX = touchEndX - touchStartX;
         const deltaY = touchEndY - touchStartY;
-
-        // Jarak geser minimum agar dianggap 'swipe'
         const swipeThreshold = 50;
+        isSwiping = false;
 
         if (Math.abs(deltaX) > Math.abs(deltaY)) {
-            // Geser Horizontal
-            if (deltaX > swipeThreshold) {
-                performMove(moveRight);
-            } else if (deltaX < -swipeThreshold) {
-                performMove(moveLeft);
-            }
+            if (deltaX > swipeThreshold) { performMove(moveRight); }
+            else if (deltaX < -swipeThreshold) { performMove(moveLeft); }
         } else if (Math.abs(deltaY) > Math.abs(deltaX)) {
-            // Geser Vertikal
-            if (deltaY > swipeThreshold) {
-                performMove(moveDown);
-            } else if (deltaY < -swipeThreshold) {
-                performMove(moveUp);
-            }
+            if (deltaY > swipeThreshold) { performMove(moveDown); }
+            else if (deltaY < -swipeThreshold) { performMove(moveUp); }
         }
     }
-    // --- AKHIR KODE BARU ---
 
 
-    // Helper: geser & gabung
-    function slide(row) {
-        let arr = row.filter(val => val); // Singkirkan nol
-        let missing = GRID_SIZE - arr.length;
-        let zeros = Array(missing).fill(0);
-        return arr.concat(zeros); // Tambahkan nol di akhir
-    }
+    function slideAndCombine(arr) {
+        let hasMoved = false;
+        const mergedTiles = [];
 
-    function combine(row) {
-        let newScore = 0;
+        let newArr = arr.filter(tile => tile !== null);
+        let numMissing = GRID_SIZE - newArr.length;
+        if (numMissing > 0 && newArr.length > 0) hasMoved = true;
+        let zeros = Array(numMissing).fill(null);
+        newArr = newArr.concat(zeros);
+
         for (let i = 0; i < GRID_SIZE - 1; i++) {
-            if (row[i] !== 0 && row[i] === row[i + 1]) {
-                row[i] *= 2;
-                newScore += row[i];
-                row[i + 1] = 0;
+            if (newArr[i] !== null && newArr[i].value === newArr[i + 1]?.value) {
+                newArr[i].value *= 2;
+                updateScore(newArr[i].value);
+                mergedTiles.push(newArr[i]);
+                newArr[i + 1].removeDom();
+                newArr[i + 1] = null;
+                hasMoved = true;
             }
         }
-        updateScore(newScore);
-        return row;
+
+        let finalArr = newArr.filter(tile => tile !== null);
+        numMissing = GRID_SIZE - finalArr.length;
+        zeros = Array(numMissing).fill(null);
+        finalArr = finalArr.concat(zeros);
+
+        for (let i = 0; i < GRID_SIZE; i++) {
+            if (arr[i] !== finalArr[i]) {
+                hasMoved = true;
+                break;
+            }
+        }
+
+        return { newRow: finalArr, hasMoved, mergedTiles };
     }
 
-    // Fungsi Gerakan Utama
+
     function moveLeft() {
-        let moved = false;
+        let globalHasMoved = false;
+        let globalMergedTiles = [];
+
         for (let r = 0; r < GRID_SIZE; r++) {
-            let row = board[r];
-            let originalRow = [...row];
+            let row = grid[r];
+            const { newRow, hasMoved, mergedTiles } = slideAndCombine(row);
+            grid[r] = newRow;
+            if (hasMoved) globalHasMoved = true;
+            globalMergedTiles.push(...mergedTiles);
 
-            let newRow = slide(row);
-            newRow = combine(newRow);
-            newRow = slide(newRow);
-
-            board[r] = newRow;
-            if (originalRow.join(',') !== newRow.join(',')) {
-                moved = true;
+            for (let c = 0; c < GRID_SIZE; c++) {
+                if (grid[r][c]) {
+                    grid[r][c].r = r;
+                    grid[r][c].c = c;
+                }
             }
         }
-        return moved;
+        return { hasMoved: globalHasMoved, mergedTiles: globalMergedTiles };
     }
 
     function moveRight() {
-        let moved = false;
+        let globalHasMoved = false;
+        let globalMergedTiles = [];
+
         for (let r = 0; r < GRID_SIZE; r++) {
-            let row = board[r].reverse(); // Balik
-            let originalRow = [...row];
+            let row = grid[r].slice().reverse();
+            const { newRow, hasMoved, mergedTiles } = slideAndCombine(row);
+            grid[r] = newRow.reverse();
+            if (hasMoved) globalHasMoved = true;
+            globalMergedTiles.push(...mergedTiles);
 
-            let newRow = slide(row);
-            newRow = combine(newRow);
-            newRow = slide(newRow);
-
-            board[r] = newRow.reverse(); // Balik lagi
-            if (originalRow.join(',') !== newRow.join(',')) {
-                moved = true;
+            for (let c = 0; c < GRID_SIZE; c++) {
+                if (grid[r][c]) {
+                    grid[r][c].r = r;
+                    grid[r][c].c = c;
+                }
             }
         }
-        return moved;
+        return { hasMoved: globalHasMoved, mergedTiles: globalMergedTiles };
     }
 
-    // Helper: Transpose (mengubah baris jadi kolom dan sebaliknya)
     function transpose() {
-        let newBoard = Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill(0));
+        let newGrid = Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill(null));
         for (let r = 0; r < GRID_SIZE; r++) {
             for (let c = 0; c < GRID_SIZE; c++) {
-                newBoard[c][r] = board[r][c];
+                newGrid[c][r] = grid[r][c];
             }
         }
-        board = newBoard;
+        grid = newGrid;
     }
 
     function moveUp() {
         transpose();
-        let moved = moveLeft();
+        const result = moveLeft();
         transpose();
-        return moved;
+
+        for (let r = 0; r < GRID_SIZE; r++) {
+            for (let c = 0; c < GRID_SIZE; c++) {
+                if (grid[r][c]) {
+                    grid[r][c].r = r;
+                    grid[r][c].c = c;
+                }
+            }
+        }
+        return result;
     }
 
     function moveDown() {
         transpose();
-        let moved = moveRight();
+        const result = moveRight();
         transpose();
-        return moved;
+
+        for (let r = 0; r < GRID_SIZE; r++) {
+            for (let c = 0; c < GRID_SIZE; c++) {
+                if (grid[r][c]) {
+                    grid[r][c].r = r;
+                    grid[r][c].c = c;
+                }
+            }
+        }
+        return result;
     }
 
-    // Cek Menang / Kalah
     function checkForWin() {
         for (let r = 0; r < GRID_SIZE; r++) {
             for (let c = 0; c < GRID_SIZE; c++) {
-                if (board[r][c] === 2048) {
+                if (grid[r][c] && grid[r][c].value === 2048) {
                     return true;
                 }
             }
@@ -323,32 +403,28 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function canMove() {
-        // Cek sel kosong
         for (let r = 0; r < GRID_SIZE; r++) {
             for (let c = 0; c < GRID_SIZE; c++) {
-                if (board[r][c] === 0) return true;
+                if (grid[r][c] === null) return true;
             }
         }
-        // Cek gabung horizontal
         for (let r = 0; r < GRID_SIZE; r++) {
             for (let c = 0; c < GRID_SIZE - 1; c++) {
-                if (board[r][c] === board[r][c + 1]) return true;
+                if (grid[r][c] && grid[r][c].value === grid[r][c + 1]?.value) return true;
             }
         }
-        // Cek gabung vertikal
         for (let r = 0; r < GRID_SIZE - 1; r++) {
             for (let c = 0; c < GRID_SIZE; c++) {
-                if (board[r][c] === board[r + 1][c]) return true;
+                if (grid[r][c] && grid[r][c].value === grid[r + 1][c]?.value) return true;
             }
         }
-        return false; // Tidak bisa gerak lagi
+        return false;
     }
 
     function isGameOver() {
         return !canMove();
     }
 
-    // Logika Modal
     function showGameEndModal(isWin) {
         if (isWin) {
             modalTitle.textContent = "Anda Menang!";
@@ -368,15 +444,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Event Listeners
     document.addEventListener('keydown', handleInput);
 
-    // --- EVENT LISTENER BARU UNTUK SENTUHAN ---
-    // Kita terapkan di 'boardElement' agar tidak mengganggu tombol
     boardElement.addEventListener('touchstart', handleTouchStart, { passive: false });
+    boardElement.addEventListener('touchmove', handleTouchMove, { passive: false });
     boardElement.addEventListener('touchend', handleTouchEnd, { passive: false });
-    boardElement.addEventListener('touchmove', (e) => {
-        // Mencegah scrolling halaman saat menggeser di dalam papan game
-        e.preventDefault();
-    }, { passive: false });
-
 
     newGameBtn.addEventListener('click', initGame);
     restartGameBtn.addEventListener('click', initGame);
@@ -386,7 +456,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     closeInstructionsBtn.addEventListener('click', closeAllModals);
 
-    // Menutup modal jika klik di luar konten
     instructionsModal.addEventListener('click', (e) => {
         if (e.target === instructionsModal) closeAllModals();
     });
@@ -394,8 +463,19 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.target === gameOverModal) closeAllModals();
     });
 
-    // Mengatasi perubahan ukuran window
-    window.addEventListener('resize', drawBoard);
+    // Event listener resize sekarang akan berfungsi dengan benar
+    window.addEventListener('resize', () => {
+        drawGridBackground(); // Mengatur ulang boardSize
+        // Memperbarui posisi DAN ukuran semua ubin yang ada
+        boardSize = boardElement.clientWidth / GRID_SIZE;
+        for (let r = 0; r < GRID_SIZE; r++) {
+            for (let c = 0; c < GRID_SIZE; c++) {
+                if (grid[r][c]) {
+                    grid[r][c].updateDomPosition();
+                }
+            }
+        }
+    });
 
     // Mulai Game!
     initGame();
